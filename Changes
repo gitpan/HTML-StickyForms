@@ -1,3 +1,8 @@
+2001-06-15 0.05 Fifth release
+  Add set_sticky() method to allow re-counting of parameters/forcing stickiness
+  Add values_as_labels() attribute/method
+  Add values_as_labels overrides to checkbox_group()/radio_group()/select()
+
 2000-11-10 0.04 Fourth release
   Fixed behaviour of select() and checkbox_group() with default => 0
 

@@ -6,9 +6,9 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.1    last changed: 06/06/00
+#   sccs version: 1.2    last changed: 06/15/01
 #
-#   Copyright Peter Haworth 2000
+#   Copyright Peter Haworth 2001
 #
 ################################################################################
 

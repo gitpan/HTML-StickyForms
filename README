@@ -5,14 +5,15 @@ routines, but is restricted to form field generation tags, with sticky values.
 Also, the interface is not so flexible as CGI.pm's, in order to keep the code
 size down.
 
-Changes since version 0.02:
-  Fixed trim_params() under Apache::Request
+Changes since version 0.04:
+  Added set_sticky() method, useful if you ad parameters after creation
+  Added values_as_labels() method, to allow labels to default to their values
+  Added values_as_labels attribute to checkbox_group()/radio_group()/select()
 
 
 
-
-This module is copyright 2000 Peter Haworth. You may use and distribute this
+This module is copyright 2001 Peter Haworth. You may use and distribute this
 module according to the same terms as Perl is distributed under.
 
 
-# SCCS version: 1.5	last updated 08/30/00
+# SCCS version: 1.6	last updated 06/15/01

@@ -6,9 +6,9 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.8    last changed: 11/10/00
+#   sccs version: 1.9    last changed: 06/15/01
 #
-#   Copyright Peter Haworth 2000
+#   Copyright Peter Haworth 2001
 #   You may use and distribute this module according to the same terms
 #   that Perl is distributed under.
 #
@@ -20,7 +20,7 @@ use vars qw(
   $VERSION
 );
 
-$VERSION=0.04;
+$VERSION=0.05;
 
 
 ################################################################################
@@ -43,14 +43,37 @@ sub new{
     return undef;
   }
 
-  # Count submitted fields
-  my $params=()=$type eq 'empty' ? () : $req->param;
-
-  bless {
+  my $self=bless {
     req => $req,
     type => $type,
-    params => $params,
+    values_as_labels => 0,
   },$class;
+
+  # Count submitted fields
+  $self->set_sticky;
+
+  $self;
+}
+
+################################################################################
+# Method: set_sticky([BOOL])
+# Description: Count the number of parameters set in the request
+# Author: Peter Haworth
+sub set_sticky{
+  my $self=shift;
+  return $self->{params}=!!$_[0] if @_;
+
+  $self->{params}=()=$self->{type} eq 'empty' ? () : $self->{req}->param;
+}
+
+################################################################################
+# Method: values_as_labels([BOOL])
+# Description: Set/Get the values_as_labels attribute
+# Author: Peter Haworth. Idea from Thomas Klausner
+sub values_as_labels{
+  my $self=shift;
+  return $self->{values_as_labels}=$_[0] if @_;
+  $self->{values_as_labels};
 }
 
 ################################################################################
@@ -192,6 +215,7 @@ sub checkbox{
 #	escape => whether to escape HTML characters in labels
 #	default/defaults => arrayref of selected values, if no sticky values
 #	linebreak => whether to add <BR>s after each checkbox
+#	values_as_labels => override the values_as_labels attribute
 # Author: Peter Haworth
 sub checkbox_group{
   my($self,%args)=@_;
@@ -204,6 +228,10 @@ sub checkbox_group{
   $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
   my $br=delete $args{linebreak} ? '<BR>' : '';
+  my $v_as_l=$self->{values_as_labels};
+  if(exists $args{values_as_labels}){
+    $v_as_l=delete $args{values_as_labels};
+  }
   my %checked=map { ; $_ => 1 }
     $self->{params} ? $self->{req}->param($name) : @$defaults;
 
@@ -220,7 +248,9 @@ sub checkbox_group{
     my $field=qq($field VALUE="$evalue");
     $field.=" CHECKED" if $checked{$value};
     $field.='>';
-    if((my $label=$labels->{$value})=~/\S/){
+    if((my $label=$v_as_l && !exists $labels->{$value}
+      ? $value : $labels->{$value})=~/\S/
+    ){
       _escape($label) if $escape;
       $field.=$label;
     }
@@ -256,6 +286,8 @@ sub radio_group{
 #	label/labels => hashref of field labels, no default
 #	default/defaults => selected value(s), if no sticky values
 #	size => if positive, sets MULTIPLE
+#	values_as_labels => override the values_as_labels attribute
+#		Of little value, since this is HTML's default, anyway
 # Author: Peter Haworth
 sub select{
   my($self,%args)=@_;
@@ -266,6 +298,10 @@ sub select{
   my $defaults=delete $args{defaults} || delete $args{default};
   $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
+  my $v_as_l=$self->{values_as_labels};
+  if(exists $args{values_as_labels}){
+    $v_as_l=delete $args{values_as_labels};
+  }
   my %selected=map { ; $_ => 1 }
     $self->{params} ? $self->{req}->param($name) : @$defaults;
 
@@ -281,7 +317,9 @@ sub select{
     $field.=qq(<OPTION VALUE="$evalue");
     $field.=" SELECTED" if $selected{$value};
     $field.=">";
-    if((my $label=$labels->{$value})=~/\S/){
+    if((my $label=$v_as_l && !exists $labels->{$value}
+      ? $value : $labels->{$value})=~/\S/
+    ){
       _escape($label);
       $field.=$label;
     }
@@ -364,9 +402,34 @@ or an object of a subclass of any of the above. As a special case, if the
 argument is C<undef> or C<''>, the object created will behave as if a request
 object with no submitted fields was given.
 
+=item $f->set_sticky([BOOL])
+
+If a true argument is passed, the form object will be sticky, using the request
+object's parameters to fill the form. If a false argument is passed, the form
+object will not be sticky, using the user-supplied default values to fill the
+form. If no argument is passed, the request object's parameters are counted,
+and the form object is made sticky if one or more parameters are present,
+non-sticky otherwise.
+
+This method is called by the constructor when a form object is created, so it
+is not usually necessary to call it explicitly. However, it may be necessary to
+call this method if parameters are set with the C<param()> method after the
+form object is created.
+
 =item $f->trim_params()
 
 Removes leading and trailing whitespace from all submitted values.
+
+=item $f->values_as_labels([BOOL])
+
+With no arguments, this method returns the C<values_as_labels> attribute. This
+attribute determines what to do when a value has no label in the
+C<checkbox_group()>, C<radio_group()> and C<select()> methods. If this attribute
+is false (the default), no labels will be automatically generated. If it is
+true, labels will default to the corresponding value if they are not supplied
+by the user.
+
+If an argument is passed, it is used to set the C<values_as_labels> attribute.
 
 =item $f->text(%args)
 
@@ -472,6 +535,10 @@ Defaults to an empty arrayref.
 
 If true, each tag/label will be followed by a E<lt>BRE<gt> tag.
 
+=item values_as_labels
+
+Overrides the form object's C<values_as_labels> attribute.
+
 =back
 
 =item $f->radio_group(%args)
@@ -509,6 +576,10 @@ submitted. Defaults to an empty arrayref.
 =item multiple
 
 If a true value is passed, the C<MULTIPLE> attribute is set.
+
+=item values_as_labels
+
+Overrides the form object's C<values_as_labels> attribute.
 
 =back
 
