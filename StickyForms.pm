@@ -6,7 +6,7 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.6    last changed: 06/27/00
+#   sccs version: 1.7    last changed: 08/30/00
 #
 #   Copyright Peter Haworth 2000
 #   You may use and distribute this module according to the same terms
@@ -20,7 +20,7 @@ use vars qw(
   $VERSION
 );
 
-$VERSION=0.02;
+$VERSION=0.03;
 
 
 ################################################################################
@@ -71,7 +71,19 @@ sub trim_params{
     }
     if($changed){
       if($type eq 'apreq'){
-	$req->param($k,\@v);
+	# XXX This should work, but doesn't
+	# $req->param($k,\@v);
+
+	# This does work, though
+	if(@v==1){
+	  $req->param($k,$v[0]);
+	}else{
+	  my $tab=$req->parms;
+	  $tab->unset($k);
+	  foreach(@v){
+	    $tab->add($k,$_);
+	  }
+	}
       }else{
 	$req->param($k,@v)
       }

@@ -1,13 +1,12 @@
 This a lightweight form generation module, which can be used with either
-CGI.pm, or (inside mod_perl) Apache::Request. The module provides similar
-facilities to CGI.pm's HTML tag generation routines, but is restricted to
-form field generation tags, with sticky values. Also, the interface is not
-so flexible as CGI.pm's, in order to keep the code size down.
+CGI.pm (version 2 or 3), or (inside mod_perl) Apache::Request.
+The module provides similar facilities to CGI.pm's HTML tag generation
+routines, but is restricted to form field generation tags, with sticky values.
+Also, the interface is not so flexible as CGI.pm's, in order to keep the code
+size down.
 
-Changes since version 0.01:
-  Added select()
-  Combined checkbox_group() and radio_group()
-  Added documentation
+Changes since version 0.02:
+  Fixed trim_params() under Apache::Request
 
 
 
@@ -16,4 +15,4 @@ This module is copyright 2000 Peter Haworth. You may use and distribute this
 module according to the same terms as Perl is distributed under.
 
 
-# SCCS version: 1.4	last updated 06/27/00
+# SCCS version: 1.5	last updated 08/30/00

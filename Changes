@@ -1,3 +1,6 @@
+2000-08-30 0.03 Third release
+  Fixed trim_params() under Apache::Request
+
 2000-06-27 0.02 Second release
   Add select()
 
