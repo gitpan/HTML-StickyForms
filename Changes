@@ -1,0 +1,16 @@
+2000-06-15 0.01 First release!
+  Add copytight notices
+
+2000-06-09 0.00_03
+  Add Todo
+  Add _escape()
+  Use _escape() to escape NAME and VALUE attribute values
+  Use -escape() to escape labels if (escape => 1) is passed to *_group()
+
+2000-06-08 0.00_02
+  Add README
+  Allow CGI::State request delegate and null request delegate
+  Add radio_group()
+
+2000-06-70 0.00_01
+  new, trim_params, text, password, textarea, checkbox, checkbox_group
