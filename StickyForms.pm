@@ -6,7 +6,7 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.9    last changed: 06/15/01
+#   sccs version: 1.10    last changed: 04/09/02
 #
 #   Copyright Peter Haworth 2001
 #   You may use and distribute this module according to the same terms
@@ -20,7 +20,7 @@ use vars qw(
   $VERSION
 );
 
-$VERSION=0.05;
+$VERSION=0.06;
 
 
 ################################################################################
@@ -47,6 +47,7 @@ sub new{
     req => $req,
     type => $type,
     values_as_labels => 0,
+    well_formed => '',
   },$class;
 
   # Count submitted fields
@@ -69,11 +70,21 @@ sub set_sticky{
 ################################################################################
 # Method: values_as_labels([BOOL])
 # Description: Set/Get the values_as_labels attribute
-# Author: Peter Haworth. Idea from Thomas Klausner
+# Author: Peter Haworth. Idea from Thomas Klausner (domm@zsi.at)
 sub values_as_labels{
   my $self=shift;
   return $self->{values_as_labels}=$_[0] if @_;
   $self->{values_as_labels};
+}
+
+################################################################################
+# Method: well_formed([BOOL])
+# Description: Set/Get the well_formed attribute
+# Author: Peter Haworth
+sub well_formed{
+  my $self=shift;
+  return !!($self->{well_formed}=$_[0] ? '/' : '') if @_;
+  !!$self->{well_formed};
 }
 
 ################################################################################
@@ -124,10 +135,10 @@ sub _escape($){
 
 ################################################################################
 # Method: text(%args)
-# Description: Return an HTML <INPUT type="text"> field
+# Description: Return an HTML <input type="text"> field
 # Special %args elements:
-#	type => TYPE attribute value, defaults to "text"
-#	default => VALUE attribute value, if sticky values not present
+#	type => type attribute value, defaults to "text"
+#	default => value attribute value, if sticky values not present
 # Author: Peter Haworth
 sub text{
   my($self,%args)=@_;
@@ -139,17 +150,17 @@ sub text{
   _escape($name);
   _escape($value);
 
-  my $field=qq(<INPUT TYPE="$type" NAME="$name" VALUE="$value");
+  my $field=qq(<input type="$type" name="$name" value="$value");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
 
-  return "$field>";
+  return "$field$self->{well_formed}>";
 }
 
 ################################################################################
 # Method: password(%args)
-# Description: Return an HTML <INPUT type="password"> field
+# Description: Return an HTML <input type="password"> field
 #	As text()
 # Author: Peter Haworth
 sub password{
@@ -159,7 +170,7 @@ sub password{
 
 ################################################################################
 # Method: textarea(%args)
-# Description: Return an HTML <TEXTAREA> tag
+# Description: Return an HTML <textarea> tag
 # Special %args elements:
 #	default => field contents, if sticky values not present
 # Author: Peter Haworth
@@ -172,17 +183,17 @@ sub textarea{
   _escape($name);
   _escape($value);
 
-  my $field=qq(<TEXTAREA NAME="$name");
+  my $field=qq(<textarea name="$name");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
 
-  return "$field>$value</TEXTAREA>";
+  return "$field>$value</textarea>";
 }
 
 ################################################################################
 # Method: checkbox(%args)
-# Description: Return a single HTML <INPUT type="checkbox"> tag
+# Description: Return a single HTML <input type="checkbox"> tag
 # Special %args elements:
 #	checked => whether the box is checked, if sticky values not present
 # Author: Peter Haworth
@@ -196,25 +207,25 @@ sub checkbox{
   _escape($name);
   _escape($value);
 
-  my $field=qq(<INPUT TYPE="checkbox" NAME="$name" VALUE="$value");
-  $field.=' CHECKED' if $checked;
+  my $field=qq(<input type="checkbox" name="$name" value="$value");
+  $field.=' checked="checked"' if $checked;
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
 
-  return "$field>";
+  return "$field$self->{well_formed}>";
 }
 
 ################################################################################
 # Method: checkbox_group(%args)
-# Description: Return a group of HTML <INPUT type="checkbox"> tags
+# Description: Return a group of HTML <input type="checkbox"> tags
 # Special %args elements:
 #	type => defaults to "checkbox"
 #	value/values => arrayref of field values, defaults to label keys
 #	label/labels => hashref of field names, no default
 #	escape => whether to escape HTML characters in labels
 #	default/defaults => arrayref of selected values, if no sticky values
-#	linebreak => whether to add <BR>s after each checkbox
+#	linebreak => whether to add <br>s after each checkbox
 #	values_as_labels => override the values_as_labels attribute
 # Author: Peter Haworth
 sub checkbox_group{
@@ -224,10 +235,10 @@ sub checkbox_group{
   my $labels=delete $args{labels} || delete $args{label} || {};
   my $escape=delete $args{escape};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
-  my $defaults=delete $args{defaults} || delete $args{default};
+  my $defaults=delete $args{exists $args{defaults} ? 'defaults' : 'default'};
   $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
-  my $br=delete $args{linebreak} ? '<BR>' : '';
+  my $br=delete $args{linebreak} ? "<br$self->{well_formed}>" : '';
   my $v_as_l=$self->{values_as_labels};
   if(exists $args{values_as_labels}){
     $v_as_l=delete $args{values_as_labels};
@@ -237,7 +248,7 @@ sub checkbox_group{
 
   _escape($name);
 
-  my $field=qq(<INPUT TYPE="$type" NAME="$name");
+  my $field=qq(<input type="$type" name="$name");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
@@ -245,9 +256,9 @@ sub checkbox_group{
   my @checkboxes;
   for my $value(@$values){
     _escape(my $evalue=$value);
-    my $field=qq($field VALUE="$evalue");
-    $field.=" CHECKED" if $checked{$value};
-    $field.='>';
+    my $field=qq($field value="$evalue");
+    $field.=' checked="checked"' if $checked{$value};
+    $field.="$self->{well_formed}>";
     if((my $label=$v_as_l && !exists $labels->{$value}
       ? $value : $labels->{$value})=~/\S/
     ){
@@ -264,13 +275,13 @@ sub checkbox_group{
 
 ################################################################################
 # Method: radio_group(%args)
-# Description: Return a group of HTML <INPUT type="radio"> tags
+# Description: Return a group of HTML <input type="radio"> tags
 # Special %args elements:
 #	value/values => arrayref of field values, defaults to label keys
 #	label/labels => hashref of field labels, no default
 #	escape => whether to escape HTML characters in labels
 #	defaults/default => selected value, if no sticky values
-#	linebreak => whether to add <BR>s after each checkbox
+#	linebreak => whether to add <br>s after each checkbox
 # Author: Peter Haworth
 sub radio_group{
   my($self,%args)=@_;
@@ -280,12 +291,12 @@ sub radio_group{
 
 ################################################################################
 # Method: select(%args)
-# Description: Return an HTML <SELECT> tag
+# Description: Return an HTML <select> tag
 # Special %args elements:
 #	value/values => arrayref of field values, defaults to label keys
 #	label/labels => hashref of field labels, no default
 #	default/defaults => selected value(s), if no sticky values
-#	size => if positive, sets MULTIPLE
+#	size => if positive, sets multiple
 #	values_as_labels => override the values_as_labels attribute
 #		Of little value, since this is HTML's default, anyway
 # Author: Peter Haworth
@@ -295,7 +306,7 @@ sub select{
   my $multiple=delete $args{multiple};
   my $labels=delete $args{labels} || delete $args{label} || {};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
-  my $defaults=delete $args{defaults} || delete $args{default};
+  my $defaults=delete $args{exists $args{defaults} ? 'defaults' : 'default'};
   $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
   my $v_as_l=$self->{values_as_labels};
@@ -306,16 +317,16 @@ sub select{
     $self->{params} ? $self->{req}->param($name) : @$defaults;
 
   _escape($name);
-  my $field=qq(<SELECT NAME="$name");
+  my $field=qq(<select name="$name");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
-  $field.=" MULTIPLE" if $multiple;
+  $field.=' multiple="multiple"' if $multiple;
   $field.=">\n";
   for my $value(@$values){
     _escape(my $evalue=$value);
-    $field.=qq(<OPTION VALUE="$evalue");
-    $field.=" SELECTED" if $selected{$value};
+    $field.=qq(<option value="$evalue");
+    $field.=' selected="selected"' if $selected{$value};
     $field.=">";
     if((my $label=$v_as_l && !exists $labels->{$value}
       ? $value : $labels->{$value})=~/\S/
@@ -323,9 +334,9 @@ sub select{
       _escape($label);
       $field.=$label;
     }
-    $field.="</OPTION>\n";
+    $field.="</option>\n";
   }
-  $field.="</SELECT>";
+  $field.="</select>";
 
   $field;
 }
@@ -357,9 +368,9 @@ HTML::StickyForms - HTML form generation for CGI or mod_perl
    print
      "<HTML><BODY><FORM>",
      "Text field:",
-     $f->text(name => 'field1', size => 40, value => 'default value'),
+     $f->text(name => 'field1', size => 40, default => 'default value'),
      "<BR>Text area:",
-     $r->textarea(name => 'field2', cols => 60, rows => 5, value => 'stuff'),
+     $r->textarea(name => 'field2', cols => 60, rows => 5, default => 'stuff'),
      "<BR>Radio buttons:",
      $r->radio_group(name => 'field3', values => [1,2,3],
        labels => { 1=>'one', 2=>'two', 3=>'three' }, default => 2),
@@ -430,6 +441,17 @@ true, labels will default to the corresponding value if they are not supplied
 by the user.
 
 If an argument is passed, it is used to set the C<values_as_labels> attribute.
+
+=item $f->well_formed([BOOL])
+
+With no arguments, this method return the C<well_formed> attribute. This
+attribute determines whether to generate well-formed XML, by including the
+trailing slash in non-container elements. If this attribute is false, no
+slashes are added - this is the default, since some older browsers don't
+behave sensibly in the face of such elements. If true, all elements will
+be well-formed.
+
+If an argument is passed, it is used to set the C<well_formed> attribute.
 
 =item $f->text(%args)
 
