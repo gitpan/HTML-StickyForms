@@ -1,3 +1,6 @@
+2000-11-10 0.04 Fourth release
+  Fixed behaviour of select() and checkbox_group() with default => 0
+
 2000-08-30 0.03 Third release
   Fixed trim_params() under Apache::Request
 
@@ -9,7 +12,7 @@
   Add documentation
 
 2000-06-15 0.01 First release!
-  Add copytight notices
+  Add copyright notices
 
 2000-06-09 0.00_03
   Add Todo

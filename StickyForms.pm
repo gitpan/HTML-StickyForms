@@ -6,7 +6,7 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.7    last changed: 08/30/00
+#   sccs version: 1.8    last changed: 11/10/00
 #
 #   Copyright Peter Haworth 2000
 #   You may use and distribute this module according to the same terms
@@ -20,7 +20,7 @@ use vars qw(
   $VERSION
 );
 
-$VERSION=0.03;
+$VERSION=0.04;
 
 
 ################################################################################
@@ -200,7 +200,8 @@ sub checkbox_group{
   my $labels=delete $args{labels} || delete $args{label} || {};
   my $escape=delete $args{escape};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
-  my $defaults=delete $args{defaults} || delete $args{default} || [];
+  my $defaults=delete $args{defaults} || delete $args{default};
+  $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
   my $br=delete $args{linebreak} ? '<BR>' : '';
   my %checked=map { ; $_ => 1 }
@@ -262,7 +263,8 @@ sub select{
   my $multiple=delete $args{multiple};
   my $labels=delete $args{labels} || delete $args{label} || {};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
-  my $defaults=delete $args{defaults} || delete $args{default} || [];
+  my $defaults=delete $args{defaults} || delete $args{default};
+  $defaults=[] unless defined $defaults;
   $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
   my %selected=map { ; $_ => 1 }
     $self->{params} ? $self->{req}->param($name) : @$defaults;
@@ -301,7 +303,7 @@ __END__
 
 HTML::StickyForms - HTML form generation for CGI or mod_perl
 
-=head1 SYSNOPSIS
+=head1 SYNOPSIS
 
  # mod_perl example
 
