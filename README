@@ -4,8 +4,16 @@ facilities to CGI.pm's HTML tag generation routines, but is restricted to
 form field generation tags, with sticky values. Also, the interface is not
 so flexible as CGI.pm's, in order to keep the code size down.
 
+Changes since version 0.01:
+  Added select()
+  Combined checkbox_group() and radio_group()
+  Added documentation
+
+
+
 
 This module is copyright 2000 Peter Haworth. You may use and distribute this
 module according to the same terms as Perl is distributed under.
 
-# SCCS version: 1.3	last updated 06/15/00
+
+# SCCS version: 1.4	last updated 06/27/00

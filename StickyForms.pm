@@ -6,7 +6,7 @@
 #   Author: Peter Haworth
 #   Date created: 06/06/2000
 #
-#   sccs version: 1.4    last changed: 06/15/00
+#   sccs version: 1.6    last changed: 06/27/00
 #
 #   Copyright Peter Haworth 2000
 #   You may use and distribute this module according to the same terms
@@ -20,7 +20,7 @@ use vars qw(
   $VERSION
 );
 
-$VERSION=0.01;
+$VERSION=0.02;
 
 
 ################################################################################
@@ -174,6 +174,7 @@ sub checkbox{
 # Method: checkbox_group(%args)
 # Description: Return a group of HTML <INPUT type="checkbox"> tags
 # Special %args elements:
+#	type => defaults to "checkbox"
 #	value/values => arrayref of field values, defaults to label keys
 #	label/labels => hashref of field names, no default
 #	escape => whether to escape HTML characters in labels
@@ -182,18 +183,20 @@ sub checkbox{
 # Author: Peter Haworth
 sub checkbox_group{
   my($self,%args)=@_;
+  my $type=delete $args{type} || 'checkbox';
   my $name=delete $args{name};
   my $labels=delete $args{labels} || delete $args{label} || {};
   my $escape=delete $args{escape};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
   my $defaults=delete $args{defaults} || delete $args{default} || [];
+  $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
   my $br=delete $args{linebreak} ? '<BR>' : '';
   my %checked=map { ; $_ => 1 }
     $self->{params} ? $self->{req}->param($name) : @$defaults;
 
   _escape($name);
 
-  my $field=qq(<INPUT TYPE="checkbox" NAME="$name");
+  my $field=qq(<INPUT TYPE="$type" NAME="$name");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
@@ -221,48 +224,283 @@ sub checkbox_group{
 # Description: Return a group of HTML <INPUT type="radio"> tags
 # Special %args elements:
 #	value/values => arrayref of field values, defaults to label keys
-#	label/labels => hashref of field names, no default
+#	label/labels => hashref of field labels, no default
 #	escape => whether to escape HTML characters in labels
-#	default => selected value, if no sticky values
+#	defaults/default => selected value, if no sticky values
 #	linebreak => whether to add <BR>s after each checkbox
 # Author: Peter Haworth
 sub radio_group{
   my($self,%args)=@_;
+
+  $self->checkbox_group(%args,type => 'radio');
+}
+
+################################################################################
+# Method: select(%args)
+# Description: Return an HTML <SELECT> tag
+# Special %args elements:
+#	value/values => arrayref of field values, defaults to label keys
+#	label/labels => hashref of field labels, no default
+#	default/defaults => selected value(s), if no sticky values
+#	size => if positive, sets MULTIPLE
+# Author: Peter Haworth
+sub select{
+  my($self,%args)=@_;
   my $name=delete $args{name};
+  my $multiple=delete $args{multiple};
   my $labels=delete $args{labels} || delete $args{label} || {};
-  my $escape=delete $args{escape};
   my $values=delete $args{values} || delete $args{value} || [keys %$labels];
-  my $default=delete $args{default};
-  $default=$self->{req}->param($name) if $self->{params};
-  my $br=delete $args{linebreak} ? '<BR>' : '';
+  my $defaults=delete $args{defaults} || delete $args{default} || [];
+  $defaults=[$defaults] if ref($defaults) ne 'ARRAY';
+  my %selected=map { ; $_ => 1 }
+    $self->{params} ? $self->{req}->param($name) : @$defaults;
 
   _escape($name);
-
-  my $field=qq(<INPUT TYPE="radio" NAME="$name");
+  my $field=qq(<SELECT NAME="$name");
   while(my($key,$val)=each %args){
     $field.=qq( $key="$val"); # XXX Escape?
   }
-
-  my @radios;
+  $field.=" MULTIPLE" if $multiple;
+  $field.=">\n";
   for my $value(@$values){
     _escape(my $evalue=$value);
-    my $field=qq($field VALUE="$evalue");
-    $field.=" CHECKED" if $default eq $value;
-    $field.='>';
+    $field.=qq(<OPTION VALUE="$evalue");
+    $field.=" SELECTED" if $selected{$value};
+    $field.=">";
     if((my $label=$labels->{$value})=~/\S/){
-      _escape($label) if $escape;
+      _escape($label);
       $field.=$label;
     }
-    $field.=$br;
-    push @radios,$field;
+    $field.="</OPTION>\n";
   }
+  $field.="</SELECT>";
 
-  return @radios if wantarray;
-  return join '',@radios;
+  $field;
 }
 
 ################################################################################
 # Return true to require
 1;
 
+
+__END__
+
+=head1 NAME
+
+HTML::StickyForms - HTML form generation for CGI or mod_perl
+
+=head1 SYSNOPSIS
+
+ # mod_perl example
+
+ use HTML::StickyForms;
+ use Apache::Request;
+
+ sub handler{
+   my($r)=@_;
+   $r=Apache::Request->new($r);
+   my $f=HTML::StickyForms->new($r);
+
+   $r->send_http_header;
+   print
+     "<HTML><BODY><FORM>",
+     "Text field:",
+     $f->text(name => 'field1', size => 40, value => 'default value'),
+     "<BR>Text area:",
+     $r->textarea(name => 'field2', cols => 60, rows => 5, value => 'stuff'),
+     "<BR>Radio buttons:",
+     $r->radio_group(name => 'field3', values => [1,2,3],
+       labels => { 1=>'one', 2=>'two', 3=>'three' }, default => 2),
+     "<BR>Single checkbox:",
+     $r->checkbox(name => 'field4', value => 'xyz', checked => 1),
+     "<BR>Checkbox group:",
+     $r->checkbox_group(name => 'field5', values => [4,5,6],
+       labels => { 4=>'four', 5=>'five', 6=>'six' }, defaults => [5,6]),
+     "<BR>Password field:",
+     $r->password(name => 'field6', size => 20),
+     '<BR><INPUT type="submit" value=" Hit me! ">',
+     '</FORM></BODY></HTML>',
+    ;
+    return OK;
+  }
+
+=head1 DESCRIPTION
+
+This module provides a simple interface for generating HTML E<lt>FORME<gt>
+fields, with default values chosen from the previous form submission. This
+module was written with mod_perl in mind, but works equally well with CGI.pm,
+including the new 3.x version.
+
+The module does not provide methods for generating all possible form fields,
+only those which benefit from having default values overridden by the previous
+form submission. This means that, unlike CGI.pm, there are no routines for
+generating E<lt>FORME<gt> tags, hidden fields or submit fields. Also this
+module's interface is much less flexible than CGI.pm's. This was done mainly
+to keep the size and complexity down.
+
+=head2 METHODS
+
+=over 4
+
+=item HTML::StickyForms->new($req)
+
+Creates a new form generation object. The single argument can be an
+Apache::Request object, a CGI object (v2.x), a CGI::State object (v3.x),
+or an object of a subclass of any of the above. As a special case, if the
+argument is C<undef> or C<''>, the object created will behave as if a request
+object with no submitted fields was given.
+
+=item $f->trim_params()
+
+Removes leading and trailing whitespace from all submitted values.
+
+=item $f->text(%args)
+
+Generates an E<lt>INPUTE<gt> tag, with a type of C<"text">. All arguments
+are used directly to generate attributes for the tag, with the following
+exceptions:
+
+=over 8
+
+=item type
+
+Defaults to C<"text">
+
+=item name
+
+The value passed will have all HTML-special characters escaped.
+
+=item default
+
+Specifies the default value of the field if no fields were submitted in the
+request object passed to C<new()>. The value used will have all HTML-special
+characters escaped.
+
+=back
+
+=item $f->password(%args)
+
+As C<text()>, but generates a C<"password"> type field.
+
+=item $f->textarea(%args)
+
+Generates a E<lt>TEXTAREAE<gt> container. All arguments are used directly
+to generate attributes for the start tag, except for:
+
+=over 8
+
+=item name
+
+This value will be HTML-escaped.
+
+=item default
+
+Specifies the default contents of the container if no fields were submitted.
+The value used will be HTML-escaped.
+
+=back
+
+=item $f->checkbox(%args)
+
+Generates a single C<"checkbox"> type E<lt>INPUTE<gt> tag. All arguments are
+used directly to generate attributes for the tag, except for:
+
+=over 8
+
+=item name, value
+
+The values passed will be HTML-escaped.
+
+=item checked
+
+Specifies the default state of the field if no fields were submitted.
+
+=back
+
+=item $f->checkbox_group(%args)
+
+Generates a group of C<"checkbox"> type E<lt>INPUTE<gt> tags. If called in
+list context, returns a list of tags, otherwise a single string containing
+all tags. All arguments are used directly to generate attributes in each tag,
+except for the following:
+
+=over 8
+
+=item type
+
+Defaults to C<"checkbox">.
+
+=item name
+
+This value will be HTML-escaped.
+
+=item values or value
+
+An arrayref of values. One tag will be generated for each element. The values
+will be HTML-escaped. Defaults to label keys.
+
+=item labels or label
+
+A hashref of labels. Each tag generated will be followed by the label keyed
+by the value. If no label is present for a given value, no label will be
+generated. Defaults to an empty hashref.
+
+=item escape
+
+If this value is true, the labels will be HTML-escaped.
+
+=item defaults or default
+
+A single value or arrayref of values to be checked if no fields were submitted.
+Defaults to an empty arrayref.
+
+=item linebreak
+
+If true, each tag/label will be followed by a E<lt>BRE<gt> tag.
+
+=back
+
+=item $f->radio_group(%args)
+
+As C<checkbox_group()>, but generates C<"radio"> type tags.
+
+=item $f->select(%args)
+
+Generates a E<lt>SELECTE<gt> tags. All arguments are used directly to generate
+attributes in the E<lt>SELECTE<gt> tag, except for the following:
+
+=over 8
+
+=item name
+
+This value will be HTML-escaped.
+
+=item values or value
+
+An arrayref of values. One E<lt>OPTIONE<gt> tag will be created inside the
+E<lt>SELECTE<gt> tag for each element. The values will be HTML-escaped.
+Defaults to label keys.
+
+=item labels or label
+
+A hashref of labels. Each E<lt>OPTIONE<gt> tag generated will contain the
+label keyed by its value. If no label is present for a given value, no label
+will be generated. Defaults to an empty hashref.
+
+=item defaults or default
+
+A single value or arrayref of values to be selected if no fields were
+submitted. Defaults to an empty arrayref.
+
+=item multiple
+
+If a true value is passed, the C<MULTIPLE> attribute is set.
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+Peter Haworth E<lt>pmh@edison.ioppublishing.comE<gt>
 

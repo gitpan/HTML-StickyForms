@@ -1,3 +1,10 @@
+2000-06-27 0.02 Second release
+  Add select()
+
+2000-06-21 0.01_01
+  Combine checkbox_group() and radio_group()
+  Add documentation
+
 2000-06-15 0.01 First release!
   Add copytight notices
 
